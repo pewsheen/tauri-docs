@@ -3,12 +3,120 @@ title: Positioner
 description: Move windows to common locations.
 ---
 
-import Stub from '@components/Stub.astro';
 import PluginLinks from '@components/PluginLinks.astro';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import CommandTabs from '@components/CommandTabs.astro';
 
 <PluginLinks plugin="positioner" />
 
-<Stub>
-	Based on
-	https://github.com/tauri-apps/plugins-workspace/tree/v2/plugins/positioner
-</Stub>
+Position your windows at well-known locations.
+
+This plugin is a port of [electron-positioner](https://github.com/jenslind/electron-positioner) for Tauri.
+
+## Supported Platforms
+
+- Windows
+- Linux
+- macOS
+
+## Setup
+
+_This plugin requires a Rust version of at least **1.75**_
+
+Install the positioner plugin to get started.
+
+<Tabs>
+  <TabItem label="Automatic" >
+
+Use your project's package manager to add the dependency:
+
+{ ' ' }
+
+<CommandTabs
+	npm="npm run tauri add positioner"
+	yarn="yarn run tauri add positioner"
+	pnpm="pnpm tauri add positioner"
+	cargo="cargo tauri add positioner"
+/>
+
+  </TabItem>
+  <TabItem label = "Manual">
+
+1. Install the positioner plugin by adding the following to your `Cargo.toml` file:
+
+```toml title="src-tauri/Cargo.toml"
+[dependencies]
+tauri-plugin-positioner = "2.0.0-beta"
+# alternatively with Git:
+tauri-plugin-positioner = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
+```
+
+2. Modify `lib.rs` to initialize the plugin:
+
+```rust title="src-tauri/src/lib.rs" ins={4}
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_positioner::init())
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+3. Install the JavaScript Guest bindings using your preferred JavaScript package manager:
+
+  <CommandTabs
+	  npm = "npm install @tauri-apps/plugin-positioner"
+	  yarn = "yarn add @tauri-apps/plugin-positioner"
+	  pnpm = "pnpm add @tauri-apps/plugin-positioner"
+	/>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+The positioner plugin is available in both JavaScript and Rust.
+
+<Tabs>
+  <TabItem label="JavaScript" >
+
+```js
+import { moveWindow, Position } from "@tauri-apps/plugin-positioner";
+
+moveWindow(Position.TopRight);
+```
+
+  </TabItem>
+  <TabItem label = "Rust" >
+
+```rust title="src-tauri/src/lib.rs"
+use tauri_plugin_positioner::{Position, WebviewWindowExt};
+
+let win = app_handle.get_webview_window("main").unwrap();
+let _ = win.move_window(Position::TopRight);
+```
+
+  </TabItem>
+</Tabs>
+
+## Permissions
+
+By default all plugin commands are blocked and cannot be accessed. You must define a list of permissions in your `capabilities` configuration.
+
+See [Access Control List](/references/v2/acl) for more information.
+
+```json title="src-tauri/capabilities/main.json" ins={6}
+{
+	"$schema": "../gen/schemas/desktop-schema.json",
+	"identifier": "main-capability",
+	"description": "Capability for the main window",
+	"windows": ["main"],
+	"permissions": ["positioner:default"]
+}
+```
+
+| Permission                     | Description                                                        |
+| ------------------------------ | ----------------------------------------------------------------- |
+| `positioner:default`           | Allows the move_window command.                                    |
+| `positioner:allow-move-window` | Enables the move_window command without any pre-configured scope. |
+| `positioner:deny-move-window`  | Denies the move_window command without any pre-configured scope.  |
